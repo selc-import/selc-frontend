@@ -7,6 +7,6 @@ watch(() => props.product.id, () => { failed.value = false })
 </script>
 
 <template>
-  <img v-if="!failed" :src="product.image" :alt="product.name" :width="product.imageWidth" :height="product.imageHeight" :loading="eager ? 'eager' : 'lazy'" decoding="async" @error="failed = true" />
+  <img v-if="!failed" :src="product.image" :alt="product.name" :style="{ objectPosition: product.imageFocus ?? 'center center' }" :width="product.imageWidth" :height="product.imageHeight" :loading="eager ? 'eager' : 'lazy'" decoding="async" @error="failed = true" />
   <div v-else class="photo-fallback"><strong>{{ product.name }}</strong><span>La fotografía no está disponible. Puedes solicitarla a un asesor.</span></div>
 </template>

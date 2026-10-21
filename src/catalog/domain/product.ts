@@ -16,6 +16,11 @@ export interface Product {
   cameras: string
   port: string
   image: string
+  /**
+   * Image focal position in CSS object-position format (e.g. '50% 30%').
+   * Used to frame the product photo; defaults to 'center center' when omitted.
+   */
+  imageFocus?: string
   imageWidth: number
   imageHeight: number
   variants: readonly ProductVariant[]
