@@ -8,7 +8,9 @@
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node scripts/check-imagotype-model.mjs",
+    "test:browser": "node scripts/check-hero-browser.mjs"
   },
   "dependencies": {
     "@tresjs/cientos": "^4.3.0",

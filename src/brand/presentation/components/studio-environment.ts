@@ -1,14 +1,15 @@
 import {
   Color, DirectionalLight, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial,
   PlaneGeometry, PMREMGenerator, RectAreaLight, Scene, Vector3,
-  type WebGLRenderer,
+  type WebGLRenderer, type Object3D,
 } from 'three'
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
+import type { ImagotypeGroups } from './imagotype-model'
 
 /** Reflection cards are baked once: no HDR download or per-frame cubemap. */
 export function createStudioEnvironment(renderer: WebGLRenderer) {
   const studio = new Scene()
-  studio.background = new Color(0.13, 0.14, 0.16)
+  studio.background = new Color(0.055, 0.06, 0.07)
   const plane = new PlaneGeometry(1, 1)
   const materials: MeshBasicMaterial[] = []
   const origin = new Vector3()
@@ -22,8 +23,10 @@ export function createStudioEnvironment(renderer: WebGLRenderer) {
     studio.add(mesh)
   }
   // A broad frontal softbox keeps silver readable; strips describe the bevel.
-  card([-3, 3, 5], [6, 7], 3.4)
-  card([4, 0, 4], [2, 7], 2.2)
+  card([0, 0.7, 5], [8, 1.8], 2.6)
+  card([0, -2.8, 5], [8, 1.8], 0.65)
+  card([-4, 2, 3], [2.4, 6], 3.4)
+  card([4, 0, 3], [1, 6], 2.2)
   card([0, 5, 0], [7, 3], 4)
   card([-4, -2, 1], [2, 5], 1.6)
   card([2, 1, -4], [4, 6], 2.8)
@@ -63,7 +66,8 @@ export function createStudioLights() {
 }
 
 export type BrandSceneRig = {
-  symbol: Group
-  material: MeshPhysicalMaterial
+  symbol: Object3D
+  groups: ImagotypeGroups
+  materials: MeshPhysicalMaterial[]
   lights: ReturnType<typeof createStudioLights>
 }

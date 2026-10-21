@@ -1,162 +1,143 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useBrandSceneStore } from '../../application/brand-scene.store'
 import { useReducedMotion } from '../../../shared/composables/useReducedMotion'
 import BrandMark from '../components/BrandMark.vue'
-import { createBrandIntro, settleBrand } from '../components/brand-intro'
+import { createBrandIntro, settleImagotype } from '../components/brand-intro'
 import type { BrandSceneRig } from '../components/studio-environment'
 
 const BrandCanvas = defineAsyncComponent(() => import('../components/BrandCanvas.vue'))
-
 const store = useBrandSceneStore()
 const reducedMotion = useReducedMotion()
-const webglFailed = ref(false)
+const presentation = ref<'intro'|'model'|'fallback'>(reducedMotion.value ? 'fallback' : 'intro')
 const canRender = ref(false)
 const sceneReady = ref(false)
-const introPending = ref(!reducedMotion.value)
+const frameAboveViewport = ref(false)
+const scrollFaded = ref(false)
+const headerVisible = computed(() => frameAboveViewport.value || scrollFaded.value)
 const hero = ref<HTMLElement>()
 const stage = ref<HTMLElement>()
-const name = ref<HTMLElement>()
-const importLabel = ref<HTMLElement>()
-const descriptor = ref<HTMLElement>()
+const frame = ref<HTMLElement>()
+const sceneLayer = ref<HTMLElement>()
 const inView = ref(true)
 const tabVisible = ref(true)
 const active = computed(() => inView.value && tabVisible.value)
+const sceneState = computed(() => presentation.value === 'fallback' ? 'fallback' : sceneReady.value ? 'ready' : 'loading')
 let rig: BrandSceneRig | undefined
 let intro: gsap.core.Timeline | undefined
+let skipRequested = false
 let scrollContext: gsap.Context | undefined
 let observer: IntersectionObserver | undefined
+let headerObserver: IntersectionObserver | undefined
 let startupTimer: ReturnType<typeof setTimeout> | undefined
 
-function revealCopy() {
-  introPending.value = false
-  const elements = [name.value, importLabel.value, descriptor.value].filter((element): element is HTMLElement => !!element)
-  gsap.set(elements, { clearProps: 'opacity,visibility,transform' })
+function settleModel() {
+  if (!rig) { skipRequested = true; return }
+  clearTimeout(startupTimer)
+  intro?.kill()
+  intro = undefined
+  settleImagotype(rig)
+  presentation.value = 'model'
+  if (sceneLayer.value) gsap.set(sceneLayer.value,{autoAlpha:1})
+  store.finishImmediately()
 }
 
 function failScene(event?: Event) {
   event?.preventDefault()
-  if (webglFailed.value) return
   clearTimeout(startupTimer)
   intro?.kill()
+  intro = undefined
   rig = undefined
-  webglFailed.value = true
+  presentation.value = 'fallback'
   canRender.value = false
-  revealCopy()
   store.finishImmediately()
 }
 
 function onSceneReady(sceneRig: BrandSceneRig) {
-  if (webglFailed.value) return
+  if (presentation.value === 'fallback') return
   clearTimeout(startupTimer)
   rig = sceneRig
   sceneReady.value = true
-  if (reducedMotion.value || !name.value || !importLabel.value || !descriptor.value) {
-    settleBrand(rig)
-    revealCopy()
-    store.finishImmediately()
-    return
-  }
-  intro = createBrandIntro(rig, {
-    name: name.value, subtitle: importLabel.value, descriptor: descriptor.value,
-  }, store.setPhase)
+  if (skipRequested || !sceneLayer.value) { settleModel(); return }
+  intro = createBrandIntro(rig,sceneLayer.value,store.setPhase,settleModel)
 }
 
 function configureScroll() {
   scrollContext?.revert()
+  scrollFaded.value = false
   if (reducedMotion.value || !stage.value || !hero.value) return
   const target = stage.value
   scrollContext = gsap.context(() => {
     gsap.to(target, {
-      y: 45, scale: 0.96, ease: 'none',
-      scrollTrigger: { trigger: hero.value, start: 'top top', end: 'bottom top', scrub: true },
+      y:-32,scale:.96,autoAlpha:0,ease:'none',
+      scrollTrigger:{trigger:hero.value,start:'top top',end:'bottom 35%',scrub:true,
+        onUpdate:self=>{
+          scrollFaded.value = self.progress >= .98
+          if (self.progress > .01 && presentation.value === 'intro') settleModel()
+        },
+      },
     })
-  }, hero.value)
+  },hero.value)
 }
-
-watch(reducedMotion, value => {
-  if (value) {
-    intro?.kill()
-    if (rig) settleBrand(rig)
-    revealCopy()
-    store.finishImmediately()
-  }
-  configureScroll()
-}, { flush: 'post' })
-
+watch(reducedMotion,value=>{if(value)failScene();configureScroll()},{flush:'post'})
 function updateVisibility() { tabVisible.value = !document.hidden }
 
-// Tres uses a separate renderer root; the startup watchdog also covers failures
-// that cannot propagate through Vue's parent error boundary.
-onErrorCaptured(() => { failScene(); return false })
-onMounted(() => {
+onErrorCaptured(()=>{failScene();return false})
+onMounted(()=>{
   gsap.registerPlugin(ScrollTrigger)
   store.setPhase('dark')
-  if (reducedMotion.value) { revealCopy(); store.finishImmediately() }
-  hero.value?.addEventListener('webglcontextlost', failScene, true)
-  hero.value?.addEventListener('webglcontextcreationerror', failScene, true)
-  try {
-    const probe = document.createElement('canvas').getContext('webgl2')
-    if (!probe) { failScene(); return }
-    probe.getExtension('WEBGL_lose_context')?.loseContext()
-    canRender.value = true
-    startupTimer = setTimeout(() => { if (!sceneReady.value) failScene() }, 8000)
-  } catch { failScene(); return }
   configureScroll()
-  if ('IntersectionObserver' in window && hero.value) {
-    observer = new IntersectionObserver(([entry]) => { inView.value = entry.isIntersecting })
-    observer.observe(hero.value)
+  if ('IntersectionObserver' in window) {
+    observer = new IntersectionObserver(([entry])=>{inView.value=entry.isIntersecting})
+    if(hero.value)observer.observe(hero.value)
+    headerObserver = new IntersectionObserver(([entry])=>{frameAboveViewport.value=!entry.isIntersecting && entry.boundingClientRect.top<0})
+    if(frame.value)headerObserver.observe(frame.value)
   }
   updateVisibility()
-  document.addEventListener('visibilitychange', updateVisibility)
+  document.addEventListener('visibilitychange',updateVisibility)
+  if(reducedMotion.value){failScene();return}
+  skipRequested = window.scrollY > 24 || location.hash === '#continuar'
+  hero.value?.addEventListener('webglcontextlost',failScene,true)
+  hero.value?.addEventListener('webglcontextcreationerror',failScene,true)
+  try{
+    const probe=document.createElement('canvas').getContext('webgl2')
+    if(!probe){failScene();return}
+    probe.getExtension('WEBGL_lose_context')?.loseContext()
+    canRender.value=true
+    startupTimer=setTimeout(failScene,10000)
+  }catch{failScene()}
 })
-onBeforeUnmount(() => {
+onBeforeUnmount(()=>{
   clearTimeout(startupTimer)
   intro?.kill()
   scrollContext?.revert()
   observer?.disconnect()
-  hero.value?.removeEventListener('webglcontextlost', failScene, true)
-  hero.value?.removeEventListener('webglcontextcreationerror', failScene, true)
-  document.removeEventListener('visibilitychange', updateVisibility)
+  headerObserver?.disconnect()
+  hero.value?.removeEventListener('webglcontextlost',failScene,true)
+  hero.value?.removeEventListener('webglcontextcreationerror',failScene,true)
+  document.removeEventListener('visibilitychange',updateVisibility)
 })
 </script>
 
 <template>
   <main>
-    <section ref="hero" class="hero" :class="{ 'intro-pending': introPending }" :data-phase="store.phase" :data-scene="webglFailed ? 'fallback' : sceneReady ? 'ready' : 'loading'" aria-label="Presentación SELC IMPORT">
-      <a class="skip-link" href="#continuar">Saltar presentación</a>
-      <div class="backdrop" aria-hidden="true"></div>
-      <header class="hero-header">
-        <a class="header-brand" href="#inicio" aria-label="SELC IMPORT, inicio">SELC<span>IMPORT</span></a>
-        <span class="header-note">TECNOLOGÍA. CON CONFIANZA.</span>
-      </header>
-      <div id="inicio" ref="stage" class="hero-content">
-        <div class="symbol" aria-hidden="true">
-          <BrandMark v-if="webglFailed" id="fallback-chrome" variant="symbol" class="fallback" />
-          <BrandCanvas
-            v-if="canRender && !webglFailed"
-            :reduced-motion="reducedMotion"
-            :active="active"
-            @ready="onSceneReady"
-            @failed="failScene"
-          />
-        </div>
-        <div class="brand-copy">
-          <h1 ref="name" class="brand-line brand-name">
-            <span class="sr-only">SELC</span>
-            <BrandMark id="wordmark-chrome" variant="wordmark" />
-          </h1>
-          <p ref="importLabel" class="brand-line brand-subtitle"><span>IMPORT</span></p>
-          <p ref="descriptor" class="brand-line brand-description">CELULARES APPLE <span aria-hidden="true">•</span> ACCESORIOS <span aria-hidden="true">•</span> CONFIANZA</p>
+    <header class="site-header" :class="{ 'site-header--visible':headerVisible }" :inert="!headerVisible" :aria-hidden="!headerVisible">
+      <a class="header-brand" href="#inicio" aria-label="SELC IMPORT, volver al inicio"><BrandMark compact /></a>
+    </header>
+    <section id="inicio" ref="hero" class="hero" :data-phase="store.phase" :data-scene="sceneState" :data-presentation="presentation" aria-label="Presentación tridimensional SELC IMPORT">
+      <a class="skip-link" href="#continuar" @click="settleModel">Saltar presentación</a>
+      <h1 class="sr-only">SELC IMPORT — CELULARES APPLE • ACCESORIOS • CONFIANZA</h1>
+      <div ref="stage" class="hero-content">
+        <div ref="frame" class="brand-frame">
+          <BrandMark v-if="presentation === 'fallback'" class="brand-fallback" />
+          <div v-if="canRender" ref="sceneLayer" class="imagotype-scene" aria-hidden="true">
+            <BrandCanvas :reduced-motion="reducedMotion" :active="active" @ready="onSceneReady" @failed="failScene" />
+          </div>
         </div>
       </div>
-      <div class="hero-footer">
-        <span class="footer-note">EL DETALLE HACE LA DIFERENCIA.</span>
-        <a href="#continuar" class="explore"><span>DESCUBRE SELC</span><span class="scroll-line" aria-hidden="true"></span></a>
-        <span class="footer-index" aria-hidden="true">01 <span>/</span> SELC IMPORT</span>
-      </div>
+      <a href="#continuar" class="explore" @click="settleModel"><span>EXPLORAR</span><span class="scroll-line" aria-hidden="true"></span></a>
     </section>
     <section id="continuar" class="continuation">
       <p class="eyebrow">SELC IMPORT</p>

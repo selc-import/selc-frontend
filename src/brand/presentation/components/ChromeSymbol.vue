@@ -1,9 +1,9 @@
-﻿<script setup lang="ts">
-import { onBeforeUnmount, onMounted, watch } from 'vue'
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { useLoop, useTresContext } from '@tresjs/core'
-import { Group, Mesh, type WebGLRenderTarget } from 'three'
-import { createRibbonGeometry } from './ribbon-geometry'
-import { createChromeMaterial, createStudioEnvironment, createStudioLights, type BrandSceneRig } from './studio-environment'
+import { Group, Mesh, MeshPhysicalMaterial, type WebGLRenderTarget } from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { createStudioEnvironment, createStudioLights, type BrandSceneRig } from './studio-environment'
 import { useBrandSceneStore } from '../../application/brand-scene.store'
 
 const props = defineProps<{ reducedMotion: boolean; active: boolean }>()
@@ -11,55 +11,82 @@ const emit = defineEmits<{ ready: [rig: BrandSceneRig]; failed: [] }>()
 const store = useBrandSceneStore()
 const { renderer, scene, invalidate } = useTresContext()
 const { onBeforeRender, onAfterRender } = useLoop()
-const geometry = createRibbonGeometry()
-const material = createChromeMaterial()
-const symbol = new Group()
-symbol.name = 'SELC symbol - traced approximation'
-symbol.add(new Mesh(geometry, material))
+const model = shallowRef<Group>()
 const lights = createStudioLights()
-const rig: BrandSceneRig = { symbol, material, lights }
-let environment: WebGLRenderTarget | undefined
 const previousEnvironment = scene.value.environment
+let environment: WebGLRenderTarget | undefined
+let rig: BrandSceneRig | undefined
 let ready = false
+let disposed = false
 let elapsed = 0
 
+function disposeModel(root: Group) {
+  const materials = new Set<MeshPhysicalMaterial>()
+  root.traverse(object => {
+    if (!(object instanceof Mesh)) return
+    object.geometry.dispose()
+    for (const material of Array.isArray(object.material) ? object.material : [object.material]) materials.add(material as MeshPhysicalMaterial)
+  })
+  materials.forEach(material => material.dispose())
+}
+
 const before = onBeforeRender(({ delta }) => {
-  if (!ready || props.reducedMotion || !props.active || !store.introComplete) return
+  if (!ready || !rig || !store.introComplete || props.reducedMotion || !props.active) return
   elapsed += Math.min(delta, 0.05)
-  // A slow, bounded turn always returns to the readable frontal silhouette.
-  symbol.rotation.y = -0.08 + Math.sin(elapsed * 0.24) * 0.3
-  symbol.rotation.x = 0.035 + Math.sin(elapsed * 0.32) * 0.025
+  // Every part remains geometry; the complete composition turns together.
+  rig.symbol.rotation.y = Math.sin(elapsed * 0.18) * 0.22 * (1-Math.exp(-elapsed*.7))
+  rig.symbol.rotation.x = Math.sin(elapsed * 0.23) * 0.018
 })
 const after = onAfterRender(() => {
-  if (ready || !environment) return
+  if (ready || !rig || !model.value || !environment) return
   ready = true
   emit('ready', rig)
 })
-
-watch(() => props.reducedMotion, () => { elapsed = 0; invalidate() })
 watch(() => store.phase, () => invalidate(), { flush: 'post' })
-onMounted(() => {
+watch(() => props.reducedMotion, () => { elapsed = 0; invalidate() })
+
+onMounted(async () => {
   try {
     renderer.value.setClearAlpha(0)
     environment = createStudioEnvironment(renderer.value)
     scene.value.environment = environment.texture
+    const loaded = await new GLTFLoader().loadAsync('/assets/brand/selc-imagotype.glb')
+    if (disposed) { disposeModel(loaded.scene); return }
+    model.value = loaded.scene
+    const root = loaded.scene.getObjectByName('SELC_Imagotype_3D') as Group | undefined
+    const group = (name: string) => {
+      const result = root?.getObjectByName(name)
+      if (!result) throw new Error(`Missing model group: ${name}`)
+      return result
+    }
+    if (!root) throw new Error('Missing full imagotype model')
+    const materials = new Set<MeshPhysicalMaterial>()
+    root.traverse(object => {
+      if (!(object instanceof Mesh)) return
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+        const physical = material as MeshPhysicalMaterial
+        physical.envMapIntensity = 0
+        materials.add(physical)
+      }
+    })
+    rig = {symbol:root,groups:{isotype:group('isotype'),wordmark:group('wordmark'),import:group('import'),descriptor:group('descriptor')},materials:[...materials],lights}
     invalidate()
   } catch {
-    emit('failed')
+    if (!disposed) emit('failed')
   }
 })
 onBeforeUnmount(() => {
+  disposed = true
   before.off()
   after.off()
   if (scene.value.environment === environment?.texture) scene.value.environment = previousEnvironment
   environment?.dispose()
-  geometry.dispose()
-  material.dispose()
+  if (model.value) disposeModel(model.value)
   lights.sweep.dispose()
 })
 </script>
 
 <template>
   <primitive :object="lights.group" />
-  <primitive :object="symbol" />
+  <primitive v-if="model" :object="model" />
 </template>

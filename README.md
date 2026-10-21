@@ -1,36 +1,43 @@
-﻿# SELC IMPORT — Bloque 1
+# SELC IMPORT — imagotipo completo en 3D
 
-Hero Vue 3 + TypeScript + TresJS con identidad cromada, iluminación de estudio y presentación de seis fases. El Bloque 2 conserva su sección existente.
+El hero presenta un modelo GLB completo: S, manzana y hoja, letras SELC, IMPORT, líneas laterales y descriptor. Todas las piezas tienen superficies cerradas, espesor real y material metálico PBR. El modelo permanece en pantalla; no se transforma en una imagen al terminar la entrada.
 
-## Desarrollo local
+## Desarrollo
 
 ```sh
 npm install
 npm run dev -- --port 5173 --strictPort
 npm run typecheck
 npm run lint
+npm test
 npm run build
 ```
 
-En PowerShell con scripts deshabilitados, usar `npm.cmd` en lugar de `npm`.
-Abrir http://localhost:5173. Se mantienen las dependencias de producción originales.
+En PowerShell con scripts deshabilitados, usar `npm.cmd`. Abrir http://localhost:5173.
 
-## Decisiones visuales
+Modelo independiente: `public/assets/brand/selc-imagotype.glb`. Se puede importar en Blender o cualquier visor glTF 2.0. No contiene imágenes ni texturas del logo.
 
-La S es una aproximación trazada manualmente desde `public/assets/brand/selc-original.png`, extruida y biselada. No es una letra de una fuente. La escena y el fallback SVG omiten el símbolo de Apple. El logotipo SELC también utiliza contornos SVG locales inspirados en las proporciones de la referencia.
+## Comportamiento
 
-El cromo utiliza un entorno PMREM generado localmente con reflectores de estudio; no requiere descargar HDR, imágenes ni fuentes. La escena 3D se carga de forma diferida. Con movimiento reducido se muestra directamente el estado final y se renderiza bajo demanda.
+- Introducción GSAP con iluminación gradual, giro, barrido y aparición de las letras 3D por grupos.
+- El conjunto completo permanece como geometría WebGL y gira lentamente dentro de un rango legible.
+- Cámara ortográfica para mantener las proporciones frontales de la composición de referencia.
+- Fondo negro, materiales cromados y entorno de estudio generado localmente.
+- La imagen original se conserva intacta y solo se muestra como fallback cuando falla WebGL o se solicita movimiento reducido. El header usa contornos vectoriales locales, no una imagen.
+- Se mantienen navegación, scroll libre y la sección existente del Bloque 2.
 
-## Verificación del navegador
+## Regenerar el modelo
 
-Con Vite activo y un Chrome de pruebas iniciado con `--headless=new --remote-debugging-port=9333` y un perfil independiente, ejecutar:
+Con Vite activo y un Chrome de pruebas con un perfil independiente y `--headless=new --remote-debugging-port=9333`:
 
 ```sh
-node scripts/check-hero-browser.mjs
+node scripts/bake-imagotype.mjs
+npm test
+npm run test:browser
 ```
 
-Requiere Node 22 o superior, que proporciona WebSocket nativo. Usa el navegador instalado; no instala Playwright ni otras dependencias. Guarda capturas y el informe en `.qa/`, ignorada por Git y el observador de Vite. El puerto de depuración es exclusivamente local y debe cerrarse al terminar la revisión.
+Node 22 o superior proporciona WebSocket nativo. El script extrae los contornos del texto suministrado, reconstruye los sólidos, modela el isotipo con curvas manuales y exporta el GLB. No usa IA para redibujar la marca, fuentes sustitutas, servicios externos ni nuevas dependencias. Cerrar Chrome y su puerto de depuración al terminar.
 
-Comprueba la coreografía, la topología real de la geometría, el encuadre y layout en seis tamaños, movimiento reducido inicial y durante la entrada, pérdida de contexto, liberación de recursos GPU y ausencia de WebGL.
+Capturas e informe de navegador: `.qa/imagotype-3d-*.png` y `.qa/imagotype-3d-report.json`.
 
-Consulta [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) para la auditoría, archivos, decisiones y limitaciones.
+Consulta [docs/IMAGOTYPE-3D.md](docs/IMAGOTYPE-3D.md) para la construcción, verificación y límites de fidelidad.
