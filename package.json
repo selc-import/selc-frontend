@@ -1,0 +1,32 @@
+{
+  "name": "selc-import-vue3",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "preview": "vite preview",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@tresjs/cientos": "^4.3.0",
+    "@tresjs/core": "^4.3.0",
+    "gsap": "^3.12.7",
+    "pinia": "^2.3.1",
+    "three": "^0.175.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.175.0",
+    "@typescript-eslint/parser": "^8.72.0",
+    "@vitejs/plugin-vue": "^5.2.0",
+    "eslint": "^9.24.0",
+    "eslint-plugin-vue": "^9.33.0",
+    "typescript": "~5.7.3",
+    "vite": "^6.2.0",
+    "vue-tsc": "^2.2.8"
+  }
+}
