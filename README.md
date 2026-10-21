@@ -24,7 +24,13 @@ Modelo independiente: `public/assets/brand/selc-imagotype.glb`. Se puede importa
 - Cámara ortográfica para mantener las proporciones frontales de la composición de referencia.
 - Fondo negro, materiales cromados y entorno de estudio generado localmente.
 - La imagen original se conserva intacta y solo se muestra como fallback cuando falla WebGL o se solicita movimiento reducido. El header usa contornos vectoriales locales, no una imagen.
-- Se mantienen navegación, scroll libre y la sección existente del Bloque 2.
+- EXPLORAR y el scroll libre conducen al catálogo interactivo de iPhone, con datos y fotografías del PDF de octubre de 2026, filtros, variantes y enlaces de WhatsApp.
+
+Consulta [docs/CATALOG.md](docs/CATALOG.md) para la integración del catálogo, sus fuentes y las pruebas de navegación y compra.
+
+La iconografía Lucide, los botones reutilizables y las microinteracciones están descritos en [docs/MICROINTERACTIONS.md](docs/MICROINTERACTIONS.md). `npm run test:microinteractions` comprueba teclado, hover, active, disabled, filtros rápidos y movimiento reducido con el navegador de pruebas.
+
+El rediseño comercial, las rutas de detalle, la navegación y el estado compartido entre páginas están documentados en [docs/CATALOG-REDESIGN.md](docs/CATALOG-REDESIGN.md), con changelog, comprobaciones y limitaciones.
 
 ## Regenerar el modelo
 

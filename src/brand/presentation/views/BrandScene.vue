@@ -124,7 +124,7 @@ onBeforeUnmount(()=>{
 <template>
   <main>
     <header class="site-header" :class="{ 'site-header--visible':headerVisible }" :inert="!headerVisible" :aria-hidden="!headerVisible">
-      <a class="header-brand" href="#inicio" aria-label="SELC IMPORT, volver al inicio"><BrandMark compact /></a>
+      <slot name="navigation"><a class="header-brand" href="#inicio" aria-label="SELC IMPORT, volver al inicio"><BrandMark compact /></a></slot>
     </header>
     <section id="inicio" ref="hero" class="hero" :data-phase="store.phase" :data-scene="sceneState" :data-presentation="presentation" aria-label="Presentación tridimensional SELC IMPORT">
       <a class="skip-link" href="#continuar" @click="settleModel">Saltar presentación</a>
@@ -139,10 +139,6 @@ onBeforeUnmount(()=>{
       </div>
       <a href="#continuar" class="explore" @click="settleModel"><span>EXPLORAR</span><span class="scroll-line" aria-hidden="true"></span></a>
     </section>
-    <section id="continuar" class="continuation">
-      <p class="eyebrow">SELC IMPORT</p>
-      <h2>Una nueva experiencia está tomando forma.</h2>
-      <p>Presentación de marca en desarrollo. El catálogo se incorporará en el Bloque 2.</p>
-    </section>
+    <slot name="continuation" />
   </main>
 </template>

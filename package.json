@@ -10,9 +10,12 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "node scripts/check-imagotype-model.mjs",
-    "test:browser": "node scripts/check-hero-browser.mjs"
+    "test:browser": "node scripts/check-hero-browser.mjs",
+    "test:catalog": "node scripts/check-catalog-browser.mjs",
+    "test:microinteractions": "node scripts/check-microinteractions-browser.mjs"
   },
   "dependencies": {
+    "@lucide/vue": "1.61.0",
     "@tresjs/cientos": "^4.3.0",
     "@tresjs/core": "^4.3.0",
     "gsap": "^3.12.7",

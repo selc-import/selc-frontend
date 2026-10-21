@@ -134,5 +134,12 @@ try{
   const report={sourceHash,meshes:52,groups:final.groups,phases:final.phases,permanent3D:true,imageTextures:0,normalHeroImages:0,responsive,reducedMotion:'passed (initial and live)',contextLoss:'passed',unsupportedWebGL:'passed',skipIntro:'passed (keeps 3D)',released,browserErrors:page.errors}
   await writeFile('.qa/imagotype-3d-report.json',JSON.stringify(report,null,2))
   console.log(JSON.stringify(report,null,2))
-}catch(error){const state=await page.evaluate(snapshot);delete state.corners;state.meshes=state.meshes.length;console.error(JSON.stringify({state,errors:page.errors},null,2));await page.screenshot('.qa/imagotype-3d-failure.png');throw error}
+}catch(error){
+  const state=await page.evaluate(snapshot).catch(()=>page.evaluate("({url:location.href,title:document.title,body:document.body.innerText.slice(0,1000)})"))
+  delete state.corners
+  if(Array.isArray(state.meshes))state.meshes=state.meshes.length
+  console.error(JSON.stringify({failure:String(error),state,errors:page.errors},null,2))
+  await page.screenshot('.qa/imagotype-3d-failure.png')
+  throw error
+}
 finally{await page.close()}
