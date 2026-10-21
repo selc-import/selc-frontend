@@ -4,6 +4,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { connectPage } from './cdp-client.mjs'
 
+
 const page=await connectPage()
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 const snapshot=`(()=>{
