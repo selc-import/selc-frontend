@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { Product } from '../../domain/product'
-const props = withDefaults(defineProps<{ product: Product; eager?: boolean }>(), { eager: false })
+import type { IPhoneProduct } from '../../domain/product'
+const props = withDefaults(defineProps<{ product: IPhoneProduct; eager?: boolean }>(), { eager: false })
 const failed = ref(false)
 watch(() => props.product.id, () => { failed.value = false })
 </script>

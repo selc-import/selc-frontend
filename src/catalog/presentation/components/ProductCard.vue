@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { formatPrice, type Product, type ProductVariant } from '../../domain/product'
+import { formatPrice, type IPhoneProduct, type ProductVariant } from '../../domain/product'
 import { productInquiry } from '../../application/whatsapp'
 import AppButton from '../../../shared/presentation/components/AppButton.vue'
 import AppIcon from '../../../shared/presentation/components/AppIcon.vue'
 import ProductPhoto from './ProductPhoto.vue'
 import { useProductCardMotion } from '../composables/useCatalogMotion'
 
-const props = defineProps<{ product: Product; variant: ProductVariant; order: number }>()
+const props = defineProps<{ product: IPhoneProduct; variant: ProductVariant; order: number }>()
 const root = ref<HTMLElement>()
 const inquiry = computed(() => productInquiry(props.product, props.variant))
 const detailRoute = computed(() => ({ name: 'product', params: { productId: props.product.id } }))

@@ -23,7 +23,8 @@ export function useCatalogMotion(root: Ref<HTMLElement | undefined>, productIds:
   }, { flush: 'post', immediate: true })
   const refreshLayout = () => {
     if (refreshFrame !== undefined) return
-    refreshFrame = requestAnimationFrame(() => { refreshFrame = undefined; ScrollTrigger.refresh() })
+    // Wait for scrolling to settle when async promos change the section height.
+    refreshFrame = requestAnimationFrame(() => { refreshFrame = undefined; ScrollTrigger.refresh(true) })
   }
   const stopLayout = watch(productIds, refreshLayout, { flush: 'post' })
   onBeforeUnmount(() => {

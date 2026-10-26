@@ -9,12 +9,16 @@
 .storefront-nav-links a:hover { color: #fff; }
 .storefront-nav a:focus-visible { outline: 2px solid #d6c29d; outline-offset: 4px; }
 .storefront-nav .storefront-contact { font-size: 13px; border-radius: 24px; }
-@media (max-width: 700px) {
+@media (max-width: 820px) {
   .storefront-nav { display: grid; grid-template-columns: 1fr auto; gap: 0 16px; padding: 10px 22px 0; }
   .storefront-nav .header-brand { width: 96px; }
   .storefront-nav-links { grid-column: 1 / -1; grid-row: 2; width: 100%; justify-content: space-between; gap: 12px; }
   .storefront-nav-links a { font-size: 12px; min-height: 46px; }
   .storefront-contact { grid-column: 2; grid-row: 1; }
 }
-@media (max-width: 360px) { .storefront-nav { padding-inline: 16px; } }
+@media (max-width: 360px) {
+  .storefront-nav { padding-inline: 16px; }
+  .storefront-nav-links { gap: 4px; }
+  .storefront-nav-links a { font-size: 11px; white-space: nowrap; }
+}
 @media (prefers-reduced-motion: reduce) { .storefront-nav-links a, .storefront-nav-links a::after { transition: none; } }
